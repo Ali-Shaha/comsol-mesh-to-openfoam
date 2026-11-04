@@ -183,8 +183,14 @@ comsol-mesh-to-openfoam/
 │   ├── _terminal.py      colors, banner, prompts, tables
 │   ├── _groups.py        naming rules, number parsing, saved groups
 │   └── _viewer.py        Gmsh window showing surface numbers
-└── standalone/
-    └── nas_to_msh.py     single-file version
+├── standalone/
+│   └── nas_to_msh.py     single-file version
+└── tutorial/
+    ├── README.md         pitzDaily tutorial instructions
+    ├── Allrun            run script (blockMesh or NASTRAN mesh)
+    ├── 0/                
+    ├── constant/         .nas,.geo, and json files
+    └── system/           blockMeshDict
 ```
 
 ## License
