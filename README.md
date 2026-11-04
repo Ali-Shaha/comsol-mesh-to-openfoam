@@ -10,7 +10,7 @@ COMSOL  ──►  model.nas  ──►  nas_to_msh.py  ──►  model_named.m
 
 ## Documentation
 
-For a detailed explanation of the conversion process, implementation, and practical workflow, see the [project article on my website](https://ali-shaha.github.io/posts/2026/11/comsol-mesh-to-openfoam/).
+For a detailed explanation of the conversion process, script IO, and practical workflow, see the [project article on my website](https://ali-shaha.github.io/posts/2026/11/comsol-mesh-to-openfoam/).
 
 ## Why this exists
 
