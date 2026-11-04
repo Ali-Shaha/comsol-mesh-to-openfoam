@@ -1,0 +1,101 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+#------------------------------------------------------------------------------
+# Mesh source
+#   ./Allrun blockMesh    mesh from system/blockMeshDict
+#   ./Allrun nas          COMSOL mesh: pitzDaily.nas -> nas_to_msh.py -> gmshToFoam
+#   ./Allrun              asks which one to use
+#------------------------------------------------------------------------------
+
+
+# Settings for the nas route
+NAS_TO_MSH=../full/nas_to_msh.py
+nasFile=constant/pitzDaily.nas
+groupsFile=constant/pitzDaily_groups.json        # names of surfaces and volume (same as in pitzDaily.geo)
+mshFile=constant/pitzDaily_named.msh             # written by nas_to_msh.py
+nasToMsh=${NAS_TO_MSH:-nas_to_msh.py}   # keep _terminal.py, _groups.py and _viewer.py next to it
+
+# Colors and message lines (no colors when the output is not a terminal)
+if [ -t 1 ]
+then
+    GREEN='\033[0;32m'; ORANGE='\033[0;33m'; RED='\033[0;31m'; NC='\033[0m'
+else
+    GREEN=; ORANGE=; RED=; NC=
+fi
+say()  { printf '   - %s\n' "$*"; }
+good() { printf '   - %b%s%b\n' "$GREEN" "$*" "$NC"; }
+warn() { printf '   - %b%s%b\n' "$ORANGE" "$*" "$NC"; }
+die()  { printf '   - %b%s%b\n' "$RED" "$*" "$NC"; exit 1; }
+
+# setPatchType <patch> <type>: gmshToFoam makes every patch a plain 'patch'
+setPatchType()
+{
+    awk -v patch="$1" -v type="$2" '
+        NF == 1 && $1 == patch { inPatch = 1 }
+        inPatch && $1 == "type" {
+            printf "        type            %s;\n", type
+            inPatch = 0; changed = 1; next
+        }
+        { print }
+        END { if (!changed) exit 1 }
+    ' constant/polyMesh/boundary > constant/polyMesh/boundary.tmp \
+        && mv constant/polyMesh/boundary.tmp constant/polyMesh/boundary \
+        && say "Patch $1 is now of type $2" \
+        || { rm -f constant/polyMesh/boundary.tmp; warn "Patch $1 not found in constant/polyMesh/boundary"; }
+}
+
+# COMSOL mesh: nas -> msh (named) -> polyMesh
+runNasRoute()
+{
+    [ -f "$nasFile" ] || die "$nasFile not found in $PWD"
+    [ -f "$nasToMsh" ] || die "$nasToMsh not found. Set NAS_TO_MSH=/path/to/nas_to_msh.py"
+    command -v python3 > /dev/null 2>&1 || die "python3 not found"
+    python3 -c "import gmsh" 2> /dev/null || die "Python module gmsh not found (pip install gmsh)"
+
+    if [ -f "$groupsFile" ] && python3 "$nasToMsh" --help 2> /dev/null | grep -q -- '--groups'
+    then
+        say "Names from $groupsFile, no questions asked"
+        python3 "$nasToMsh" "$nasFile" --groups "$groupsFile" || die "$nasToMsh failed"
+    else
+        warn "No usable $groupsFile, $nasToMsh will ask for the names (see pitzDaily.geo)"
+        python3 "$nasToMsh" "$nasFile" || die "$nasToMsh failed"
+    fi
+
+    [ -f "$mshFile" ] || die "$mshFile was not written"
+    runApplication gmshToFoam "$mshFile"
+
+    # Patch types of the pitzDaily tutorial (blockMesh sets them in blockMeshDict)
+    setPatchType frontAndBack empty
+    setPatchType upperWall wall
+    setPatchType lowerWall wall
+}
+
+# Choose the mesh source
+meshSource=$1
+while true
+do
+    case "$meshSource" in
+        1|blockMesh) meshSource=blockMesh; break ;;
+        2|nas)       meshSource=nas; break ;;
+    esac
+    [ -n "$meshSource" ] && warn "Unknown choice '$meshSource'"
+    echo
+    say "Mesh source for the pitzDaily case"
+    echo "       1  blockMesh   (system/blockMeshDict)"
+    echo "       2  nas         ($nasFile from COMSOL, $nasToMsh, gmshToFoam)"
+    printf '   - Your choice (1/2): '
+    read -r meshSource || exit 1
+done
+
+case "$meshSource" in
+    blockMesh) runApplication blockMesh ;;
+    nas)       runNasRoute ;;
+esac
+
+runApplication foamRun
+
+#------------------------------------------------------------------------------

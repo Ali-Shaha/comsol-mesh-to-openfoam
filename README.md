@@ -65,6 +65,10 @@ pip install -r requirements.txt
 
 5. **Check the result.** A successful conversion does not, by itself, mean that the mesh is suitable for simulation. Run `checkMesh` and review the imported boundaries, including patch names and types, before proceeding.
 
+## OpenFOAM tutorial
+
+A `pitzDaily` OpenFOAM tutorial is included in [`tutorial/`](tutorial/). It demonstrates how to use the converter in an OpenFOAM case, with two mesh-generation options: the standard `blockMesh` workflow or a COMSOL-exported NASTRAN mesh converted using `nas_to_msh.py` and `gmshToFoam`. See the [tutorial README](tutorial/README.md) for setup and run instructions.
+
 ## Naming surfaces and volumes
 
 Enter a group name, followed by the numbers belonging to that group. Numbers can be specified as a list, a range, or a combination of both.
@@ -169,7 +173,7 @@ The viewer requires a graphical display. The conversion continues without it, an
 ## Repository layout
 
 ```text
-comsol-to-openfoam-mesh/
+comsol-mesh-to-openfoam/
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
