@@ -1,4 +1,4 @@
-# comsol-to-openfoam-mesh
+# comsol-mesh-to-openfoam
 
 Convert a **COMSOL mesh to OpenFOAM**.
 
